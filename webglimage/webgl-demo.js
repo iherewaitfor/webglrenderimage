@@ -12,8 +12,27 @@ function main() {
   image.onload = function() {
     render(image);
   };
+  window.addEventListener("resize", function(){
+    render(image);
+    console.log("onresize")
+  }, false);
 }
 
+function getScaleSize(imageW, imageH, canvasW, canvasH){
+  var dW = 0;
+  var dH = 0;
+  if(imageW > 0 && imageH > 0 && canvasW > 0 && canvasH){
+    if(imageW * canvasH < imageH * canvasW){
+      //以canvasH为基准
+      dH = canvasH
+      dW = imageW * canvasH/imageH
+    } else {
+      dW = canvasW
+      dH = imageH * canvasW/imageW
+    }
+  }
+  return {width:dW,height:dH}
+}
 function render(image) {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
@@ -36,7 +55,11 @@ function render(image) {
   // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   // Set a rectangle the same size as the image.
-  setRectangle(gl, 0, 0, image.width, image.height);
+  //先更正canvas显示的大小
+  webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+  //修改模型大小 
+  var destSize = getScaleSize(image.width, image.height, gl.canvas.width, gl.canvas.height);
+  setRectangle(gl, 0, 0, destSize.width, destSize.height);
 
   // provide texture coordinates for the rectangle.
   var texcoordBuffer = gl.createBuffer();
