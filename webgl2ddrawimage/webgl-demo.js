@@ -94,43 +94,27 @@ function main() {
   ];
 
   var drawInfos = [];
-  var numToDraw = 9;
-  var speed = 60;
-  for (var ii = 0; ii < numToDraw; ++ii) {
-    var drawInfo = {
-      x: Math.random() * gl.canvas.width,
-      y: Math.random() * gl.canvas.height,
-      dx: Math.random() > 0.5 ? -1 : 1,
-      dy: Math.random() > 0.5 ? -1 : 1,
-      xScale: Math.random() * 0.25 + 0.25,
-      yScale: Math.random() * 0.25 + 0.25,
-      offX: Math.random() * 0.75,
-      offY: Math.random() * 0.75,
-      textureInfo: textureInfos[Math.random() * textureInfos.length | 0],
-    };
-    drawInfo.width  = Math.random() * (1 - drawInfo.offX);
-    drawInfo.height = Math.random() * (1 - drawInfo.offY);
-    drawInfos.push(drawInfo);
-  }
+  var numToDraw = 2;
+  generateDrawInfos(numToDraw)
 
-  function update(deltaTime) {
-    drawInfos.forEach(function(drawInfo) {
-      drawInfo.x += drawInfo.dx * speed * deltaTime;
-      drawInfo.y += drawInfo.dy * speed * deltaTime;
-      if (drawInfo.x < 0) {
-        drawInfo.dx = 1;
-      }
-      if (drawInfo.x >= gl.canvas.width) {
-        drawInfo.dx = -1;
-      }
-      if (drawInfo.y < 0) {
-        drawInfo.dy = 1;
-      }
-      if (drawInfo.y >= gl.canvas.height) {
-        drawInfo.dy = -1;
-      }
-    });
-  }
+  function generateDrawInfos(numToDraw){
+    for (var ii = 0; ii < numToDraw; ++ii) {
+      var drawInfo = {
+        srcX:0,  
+        srcY:0, 
+        srcWidth:0, 
+        srcHeight:0,  //取纹理的哪个部分。一般全取。
+        dstX:0, 
+        dstY:0, 
+        dstWidth:400, 
+        dstHeight:300,  //最终在canvas上的坐标和大小。按比例铺满
+        textureInfo: textureInfos[Math.random() * textureInfos.length | 0], //纹理
+      };
+      drawInfo.width  = Math.random() * (1 - drawInfo.offX);
+      drawInfo.height = Math.random() * (1 - drawInfo.offY);
+      drawInfos.push(drawInfo);
+    }
+  } 
 
   function draw() {
     webglUtils.resizeCanvasToDisplaySize(gl.canvas);
@@ -140,35 +124,25 @@ function main() {
 
     gl.clear(gl.COLOR_BUFFER_BIT);
 
+    var i = 0
     drawInfos.forEach(function(drawInfo) {
-      var dstX      = drawInfo.x;
-      var dstY      = drawInfo.y;
-      var dstWidth  = drawInfo.textureInfo.width  * drawInfo.xScale;
-      var dstHeight = drawInfo.textureInfo.height * drawInfo.yScale;
 
-      var srcX      = drawInfo.textureInfo.width  * drawInfo.offX;
-      var srcY      = drawInfo.textureInfo.height * drawInfo.offY;
-      var srcWidth  = drawInfo.textureInfo.width  * drawInfo.width;
-      var srcHeight = drawInfo.textureInfo.height * drawInfo.height;
-
+      // var maxWidth = 1280 < gl.canvas.width ? 800 :gl.canvas.width;
+      var maxWidth = gl.canvas.width;
+      var tempWidth = maxWidth/2
+      var tempHeight = tempWidth *3/4
       drawImage(
-        drawInfo.textureInfo.texture,
-        drawInfo.textureInfo.width,
-        drawInfo.textureInfo.height,
-        srcX, srcY, srcWidth, srcHeight,
-        dstX, dstY, dstWidth, dstHeight);
+        drawInfo.textureInfo.texture, //纹理
+        drawInfo.textureInfo.width,   //纹理宽度
+        drawInfo.textureInfo.height,  //纹理高度
+        0, 0, drawInfo.textureInfo.width, drawInfo.textureInfo.height,  //取纹理的哪个部分。一般全取。
+        i, 100, tempWidth, tempHeight); //最终在canvas上的坐标和大小
+        i +=tempWidth;
     });
   }
 
-  var then = 0;
   function render(time) {
-    var now = time * 0.001;
-    var deltaTime = Math.min(0.1, now - then);
-    then = now;
-
-    update(deltaTime);
     draw();
-
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
