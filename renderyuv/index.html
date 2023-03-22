@@ -67,6 +67,7 @@
 
         var fragmentShaderSource = [
           "precision highp float;",
+          // "precision highp int;",
           "varying lowp vec2 vTextureCoord;",
           "uniform sampler2D YTexture;",
           "uniform sampler2D UTexture;",
@@ -79,19 +80,39 @@
           " 0, 0, 0, 1",
           ");",
           "void main(void) {",
-          " gl_FragColor = vec4( texture2D(YTexture, vTextureCoord).x, texture2D(UTexture, vTextureCoord).x, texture2D(VTexture, vTextureCoord).x, 1) * YUV2RGB;",
+          "const int width = 640;",
+          "const int videoHeight = 320;",
+          "highp vec2 yTextureCoord;",
+          "yTextureCoord.x = vTextureCoord.x;",
+          "yTextureCoord.y = vTextureCoord.y * 2.0/3.0;",
+
+
+          "const float PRECISION_OFFSET = 0.2;",
+          "const highp int uHeight = videoHeight/2; ",// U纹理的高度值
+          "float fuHeight = float(uHeight);",
+          " float uh = floor(vTextureCoord.y * fuHeight + PRECISION_OFFSET);",
+
+          "highp vec2 uTextureCoord;", //u纹理
+          "mod(uh, 2.0);",
+          "uTextureCoord.x = vTextureCoord.x*0.5 + 0.5*(mod(uh, 2.0));",
+          
+
+          " gl_FragColor = vec4( texture2D(YTexture, yTextureCoord).x, 0, 0, 1) * YUV2RGB;",
+         // " gl_FragColor = vec4( texture2D(YTexture, vTextureCoord).x, texture2D(UTexture, vTextureCoord).x, texture2D(VTexture, vTextureCoord).x, 1) * YUV2RGB;",
           "}",
         ].join("\n");
 
         var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
         gl.shaderSource(fragmentShader, fragmentShaderSource);
         gl.compileShader(fragmentShader);
+        console.log("compileShader" + gl.getError());
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
         gl.linkProgram(program);
         gl.useProgram(program);
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-          console.log("Shader link failed.");
+          var error = gl.getProgramInfoLog(program);
+          console.log("Shader link failed." + error);
         }
         var vertexPositionAttribute = gl.getAttribLocation(
           program,
@@ -131,11 +152,11 @@
         gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         gl.y = new Texture(gl);
-        gl.u = new Texture(gl);
-        gl.v = new Texture(gl);
+        // gl.u = new Texture(gl);
+        // gl.v = new Texture(gl);
         gl.y.bind(0, program, "YTexture");
-        gl.u.bind(1, program, "UTexture");
-        gl.v.bind(2, program, "VTexture");
+        // gl.u.bind(1, program, "UTexture");
+        // gl.v.bind(2, program, "VTexture");
 
         return gl;
       }
@@ -144,17 +165,19 @@
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.y.fill(width, height, videoFrame.subarray(0, uOffset));
-        gl.u.fill(
-          width >> 1,
-          height >> 1,
-          videoFrame.subarray(uOffset, uOffset + vOffset)
-        );
-        gl.v.fill(
-          width >> 1,
-          height >> 1,
-          videoFrame.subarray(uOffset + vOffset, videoFrame.length)
-        );
+        //使用单纹理
+        gl.y.fill(width, height*3/2, videoFrame);
+//        gl.y.fill(width, height, videoFrame.subarray(0, uOffset));
+        // gl.u.fill(
+        //   width >> 1,
+        //   height >> 1,
+        //   videoFrame.subarray(uOffset, uOffset + vOffset)
+        // );
+        // gl.v.fill(
+        //   width >> 1,
+        //   height >> 1,
+        //   videoFrame.subarray(uOffset + vOffset, videoFrame.length)
+        // );
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
