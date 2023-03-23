@@ -67,9 +67,10 @@
 
         var fragmentShaderSource = [
           "precision highp float;",
-          // "precision highp int;",
           "varying lowp vec2 vTextureCoord;",
           "uniform sampler2D YTexture;",
+          "uniform float videoWidth;",
+          "uniform float videoHeight;",
           "const mat4 YUV2RGB = mat4",
           "(",
           " 1.1643828125, 0, 1.59602734375, -.87078515625,",
@@ -78,16 +79,12 @@
           " 0, 0, 0, 1",
           ");",
           "void main(void) {",
-          "const int width = 640;",
-          "const int videoHeight = 320;",
           "highp vec2 yTextureCoord;",
           "yTextureCoord.x = vTextureCoord.x;",
           "yTextureCoord.y = vTextureCoord.y * 2.0/3.0;",
 
-
           "const float PRECISION_OFFSET = 0.2;",
-          "const highp int uHeight = videoHeight/2; ",// U纹理的高度值
-          "float fuHeight = float(uHeight);",
+          "float fuHeight = videoHeight/2.0;",// U纹理的高度值
           " float uh = floor(vTextureCoord.y * fuHeight + PRECISION_OFFSET);",
 
           "highp vec2 uTextureCoord;", //u纹理
@@ -113,6 +110,7 @@
         gl.attachShader(program, fragmentShader);
         gl.linkProgram(program);
         gl.useProgram(program);
+        gl.program = program;
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
           var error = gl.getProgramInfoLog(program);
           console.log("Shader link failed." + error);
@@ -155,11 +153,7 @@
         gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         gl.y = new Texture(gl);
-        // gl.u = new Texture(gl);
-        // gl.v = new Texture(gl);
         gl.y.bind(0, program, "YTexture");
-        // gl.u.bind(1, program, "UTexture");
-        // gl.v.bind(2, program, "VTexture");
 
         return gl;
       }
@@ -168,19 +162,12 @@
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
+
+
+        gl.uniform1f(gl.getUniformLocation(gl.program, "videoWidth"), width); //设置视频宽度到shader
+        gl.uniform1f(gl.getUniformLocation(gl.program, "videoHeight"), height);//设置视频高度到shader
         //使用单纹理
         gl.y.fill(width, height*3/2, videoFrame);
-//        gl.y.fill(width, height, videoFrame.subarray(0, uOffset));
-        // gl.u.fill(
-        //   width >> 1,
-        //   height >> 1,
-        //   videoFrame.subarray(uOffset, uOffset + vOffset)
-        // );
-        // gl.v.fill(
-        //   width >> 1,
-        //   height >> 1,
-        //   videoFrame.subarray(uOffset + vOffset, videoFrame.length)
-        // );
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
@@ -198,7 +185,6 @@
           "loadend",
           (e) => {
             var buf = e.target.result;
-            // 这里是没问题的
             const width = 640;
             const height = 360;
             const ylen = width * height;
