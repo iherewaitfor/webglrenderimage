@@ -158,7 +158,7 @@
         return gl;
       }
 
-      function renderFrame(gl, videoFrame, width, height, uOffset, vOffset) {
+      function renderFrame(gl, videoFrame, width, height) {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
@@ -167,8 +167,9 @@
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoWidth"), width); //设置视频宽度到shader
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoHeight"), height);//设置视频高度到shader
         //使用单纹理
-        gl.y.fill(width, height*3/2, videoFrame);
-//        gl.texBindSharedHandle(0x80001282);
+        // gl.y.fill(width, height*3/2, videoFrame);
+        gl.y.fill(width, height*3/2, null);
+        gl.texBindSharedHandle(0x4003342);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
@@ -201,9 +202,7 @@
               renderContext,
               data,
               width,
-              height,
-              ylen,
-              uvlen
+              height
             );
           },
           false
