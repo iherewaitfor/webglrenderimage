@@ -10,6 +10,7 @@
   <body>
     <img id="img" src="./cat-color.jpg" alt="" />
     <input type="file" />
+    <button onclick="renderFrame(window.gl, null,640, 480);">play</button>
     <canvas id="canvas"></canvas>
     <script>
       function Texture(gl) {
@@ -50,6 +51,7 @@
         var gl =
           canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
         if (!gl) return gl;
+        window.gl = gl;
         // 创建着色器
         var program = gl.createProgram();
         var vertexShaderSource = [
@@ -153,6 +155,7 @@
         gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         gl.y = new Texture(gl);
+        gl.y.fill(640, 480, null);
         gl.y.bind(0, program, "YTexture");
 
         return gl;
@@ -167,9 +170,12 @@
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoWidth"), width); //设置视频宽度到shader
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoHeight"), height);//设置视频高度到shader
         //使用单纹理
+        if(videoFrame){
+          gl.y.fill(width, height*3/2, videoFrame);
+        }
         // gl.y.fill(width, height*3/2, videoFrame);
-        gl.y.fill(width, height*3/2, null);
-        gl.texBindSharedHandle(0x4003342);
+        // gl.y.fill(width, height*3/2, null);
+        gl.texBindSharedHandle(0x40001a82);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
