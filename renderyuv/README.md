@@ -2,6 +2,31 @@
 只传入一个纹理，通过编写shader，读取Y、U、V数据，进行渲染。
 设视频的宽高为width、height。则该单纹理的宽高为width、1.5height。其中Y数据大小为width\*heigth，U、V均为0.5width\*0.5height.
 
+## shader编译
+shader的编译流程如下 ，先使用gl.createShader创建shader，比如像素（片元）着器色，传入参数gl.FRAGMENT_SHADER，然后调用gl.shaderSource(fragmentShader, fragmentShaderSource)设置shader源码，再调用  gl.compileShader(fragmentShader)进行编译。
+编译是否成功，通过 gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)获取。
+
+具体的错误信息通过gl.getShaderInfoLog(fragmentShader)获取。
+``` javascript
+        var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragmentShaderSource);
+        gl.compileShader(fragmentShader);
+        // 检测编译是否成功
+        var success = gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS);
+        if (!success) {
+          // 编译过程出错，获取错误信息。
+          console.log( "could not compile shader:" + gl.getShaderInfoLog(fragmentShader));
+        }
+```
+
+shader编译的错误信息，比如在在shader中写了
+```
+    vTextureCoord.y = 1.0/6 + uTextureCoord.y;
+```
+可以在控制台上看到错误信息如下，把1.0/6改成1.0/6.0就可以了。
+```
+could not compile shader:ERROR: 0:26: '/' : wrong operand types - no operation '/' exists that takes a left-hand operand of type 'const float' and a right operand of type 'const int' (or there is no acceptable conversion)
+```
 ## webgl的glsl
 写shader时碰到的几个点：
 - glsl是强数据类型的浮点数不能直接和整数运算。

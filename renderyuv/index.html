@@ -105,6 +105,12 @@
         var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
         gl.shaderSource(fragmentShader, fragmentShaderSource);
         gl.compileShader(fragmentShader);
+        // 检测编译是否成功
+        var success = gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS);
+        if (!success) {
+          // 编译过程出错，获取错误信息。
+          console.log( "could not compile shader:" + gl.getShaderInfoLog(fragmentShader));
+        }
         console.log("compileShader" + gl.getError());
         gl.attachShader(program, vertexShader);
         gl.attachShader(program, fragmentShader);
