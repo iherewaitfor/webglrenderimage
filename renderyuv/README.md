@@ -46,6 +46,52 @@ javascript中的调用赋值操作。
 具体参考https://developer.mozilla.org/zh-CN/docs/Web/API/WebGLRenderingContext/uniform
 
 
+## 顶点属性设置
+在 WebGL 中，作用于顶点的数据会先储存在attributes。这些数据仅对 JavaScript 代码和顶点着色器可用。
+
+
+顶点着色器代码
+```C++
+          attribute highp vec4 aVertexPosition;
+          attribute vec2 aTextureCoord;
+          varying highp vec2 vTextureCoord;
+          void main(void) {
+           gl_Position = aVertexPosition;
+           vTextureCoord = aTextureCoord;
+          }
+```
+
+设置顶点位置发生 的代码如下
+```javascript
+        var vertexPositionAttribute = gl.getAttribLocation(
+          program,
+          "aVertexPosition"
+        );
+        gl.enableVertexAttribArray(vertexPositionAttribute);
+
+        var verticesBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          new Float32Array([
+            1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0,
+          ]),
+          gl.STATIC_DRAW
+        );
+        gl.vertexAttribPointer(
+          vertexPositionAttribute,
+          3,
+          gl.FLOAT,
+          false,
+          0,
+          0
+        );
+```
+先使用getAttribLocation获取属性索引，使用enableVertexAttribArray让发生被启用。
+
+接着创建好buffer。使用createBuffer创建buffer，bindBuffer绑定buffer的数据类型。使用bufferData去设置buffer的数据内容。
+
+最后使用vertexAttribPointer告诉显卡从当前绑定的缓冲区（bindBuffer() 指定的缓冲区）中读取顶点属性数据。
 
 参考
 
@@ -54,3 +100,5 @@ javascript中的调用赋值操作。
 [https://www.khronos.org/files/opengles_shading_language.pdf](https://www.khronos.org/files/opengles_shading_language.pdf)
 
 [https://developer.mozilla.org/zh-CN/docs/Web/API/WebGLRenderingContext/uniform](https://developer.mozilla.org/zh-CN/docs/Web/API/WebGLRenderingContext/uniform)
+
+[https://developer.mozilla.org/zh-CN/docs/Web/API/WebGLRenderingContext/enableVertexAttribArray](https://developer.mozilla.org/zh-CN/docs/Web/API/WebGLRenderingContext/enableVertexAttribArray)

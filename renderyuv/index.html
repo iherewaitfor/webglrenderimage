@@ -124,8 +124,8 @@
         var vertexPositionAttribute = gl.getAttribLocation(
           program,
           "aVertexPosition"
-        );
-        gl.enableVertexAttribArray(vertexPositionAttribute);
+        );  //找到对应shader中的aVertexPostion属性位置。
+        gl.enableVertexAttribArray(vertexPositionAttribute);//启用属性vertexPositionAttribute。shader中定义的aVertexPostion
         var textureCoordAttribute = gl.getAttribLocation(
           program,
           "aTextureCoord"
