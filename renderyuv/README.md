@@ -27,6 +27,14 @@ shader编译的错误信息，比如在在shader中写了
 ```
 could not compile shader:ERROR: 0:26: '/' : wrong operand types - no operation '/' exists that takes a left-hand operand of type 'const float' and a right operand of type 'const int' (or there is no acceptable conversion)
 ```
+
+编译完顶点着色器和片元着色器，就可以使用attachShader，把两个着色器加到着色器程序上。最后使用linkProgram和useProgram启用程序。
+```javascript
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        gl.useProgram(program);
+```
 ## webgl的glsl
 写shader时碰到的几个点：
 - glsl是强数据类型的浮点数不能直接和整数运算。
