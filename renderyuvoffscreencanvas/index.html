@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RenderYUVInOneTexture</title>
+    <style></style>
+  </head>
+  <body>
+    <img id="img" src="./cat-color.jpg" alt="" />
+    <input type="file" />
+    <canvas id="canvas"></canvas>
+    <script>
+      function Texture(gl) {
+        this.gl = gl;
+        this.texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
+
+      Texture.prototype.bind = function (n, program, name) {
+        var gl = this.gl;
+        gl.activeTexture([gl.TEXTURE0, gl.TEXTURE1, gl.TEXTURE2][n]);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.uniform1i(gl.getUniformLocation(program, name), n);
+      };
+
+      Texture.prototype.fill = function (width, height, data) {
+        var gl = this.gl;
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.LUMINANCE,
+          width,
+          height,
+          0,
+          gl.LUMINANCE,
+          gl.UNSIGNED_BYTE,
+          data
+        );
+      };
+      function setupCanvas(canvas) {
+        var gl =
+          canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (!gl) return gl;
+        // 创建着色器
+        var program = gl.createProgram();
+        var vertexShaderSource = [
+          "attribute highp vec4 aVertexPosition;",
+          "attribute vec2 aTextureCoord;",
+          "varying highp vec2 vTextureCoord;",
+          "void main(void) {",
+          " gl_Position = aVertexPosition;",
+          " vTextureCoord = aTextureCoord;",
+          "}",
+        ].join("\n");
+        var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertexShader, vertexShaderSource);
+        gl.compileShader(vertexShader);
+
+        var fragmentShaderSource = [
+          "precision highp float;",
+          "varying lowp vec2 vTextureCoord;",
+          "uniform sampler2D YTexture;",
+          "uniform float videoWidth;",
+          "uniform float videoHeight;",
+          "const mat4 YUV2RGB = mat4",
+          "(",
+          " 1.1643828125, 0, 1.59602734375, -.87078515625,",
+          " 1.1643828125, -.39176171875, -.81296875, .52959375,",
+          " 1.1643828125, 2.017234375, 0, -1.081390625,",
+          " 0, 0, 0, 1",
+          ");",
+          "void main(void) {",
+          "highp vec2 yTextureCoord;",
+          "yTextureCoord.x = vTextureCoord.x;",
+          "yTextureCoord.y = vTextureCoord.y * 2.0/3.0;",
+
+          "const float PRECISION_OFFSET = 0.2;",
+          "float fuHeight = videoHeight/2.0;",// U纹理的高度值
+          " float uh = floor(vTextureCoord.y * fuHeight + PRECISION_OFFSET);",
+
+          "highp vec2 uTextureCoord;", //u纹理
+          "uTextureCoord.x = vTextureCoord.x*0.5 + 0.5*(mod(uh, 2.0));",
+
+          "uh = (uh < 2.0 ? 2.0 : uh); ",//上边缘对齐。解决上边缘绿色问题
+          "uTextureCoord.y = 2.0/3.0 + uh/2.0*2.0/3.0/float(videoHeight);",
+
+          "highp vec2 vTextureCoord;", //u纹理
+          "vTextureCoord.x = uTextureCoord.x;",
+          "vTextureCoord.y = 1.0/6.0 + uTextureCoord.y;",
+          
+
+          " gl_FragColor = vec4( texture2D(YTexture, yTextureCoord).x, texture2D(YTexture, uTextureCoord).x, texture2D(YTexture, vTextureCoord).x, 1) * YUV2RGB;",
+          "}",
+        ].join("\n");
+
+        var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragmentShaderSource);
+        gl.compileShader(fragmentShader);
+        // 检测编译是否成功
+        var success = gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS);
+        if (!success) {
+          // 编译过程出错，获取错误信息。
+          console.log( "could not compile shader:" + gl.getShaderInfoLog(fragmentShader));
+        }
+        console.log("compileShader" + gl.getError());
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        gl.useProgram(program);
+        gl.program = program;
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          var error = gl.getProgramInfoLog(program);
+          console.log("Shader link failed." + error);
+        }
+        var vertexPositionAttribute = gl.getAttribLocation(
+          program,
+          "aVertexPosition"
+        );  //找到对应shader中的aVertexPostion属性位置。
+        gl.enableVertexAttribArray(vertexPositionAttribute);//启用属性vertexPositionAttribute。shader中定义的aVertexPostion
+        var textureCoordAttribute = gl.getAttribLocation(
+          program,
+          "aTextureCoord"
+        );
+        gl.enableVertexAttribArray(textureCoordAttribute);
+
+        var verticesBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          new Float32Array([
+            1.0, 1.0, 0.0, -1.0, 1.0, 0.0, 1.0, -1.0, 0.0, -1.0, -1.0, 0.0,
+          ]),
+          gl.STATIC_DRAW
+        );
+        gl.vertexAttribPointer(
+          vertexPositionAttribute,
+          3,
+          gl.FLOAT,
+          false,
+          0,
+          0
+        );
+        var texCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          new Float32Array([1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0]),
+          gl.STATIC_DRAW
+        );
+        gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+
+        gl.y = new Texture(gl);
+        gl.y.bind(0, program, "YTexture");
+
+        return gl;
+      }
+
+      function renderFrame(gl, videoFrame, width, height, uOffset, vOffset) {
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+
+        gl.uniform1f(gl.getUniformLocation(gl.program, "videoWidth"), width); //设置视频宽度到shader
+        gl.uniform1f(gl.getUniformLocation(gl.program, "videoHeight"), height);//设置视频高度到shader
+        //使用单纹理
+        gl.y.fill(width, height*3/2, videoFrame);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+      var clamp = function(val) {
+        if(val < 0) return 0
+        if(val > 255) return 255
+        return val
+      }
+      const input = document.querySelector("input");
+      input.addEventListener("change", function (e) {
+        var file = e.target.files[0];
+        var fr = new FileReader();
+        fr.readAsArrayBuffer(file);
+        fr.addEventListener(
+          "loadend",
+          (e) => {
+            var buf = e.target.result;
+            const width = 640;
+            const height = 360;
+            const ylen = width * height;
+            const uvlen = (width / 2) * (height / 2);
+            var canvas = document.getElementById("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            var renderContext = setupCanvas(canvas, {
+              preserveDrawingBuffer: false,
+            });
+            var data = new Uint8ClampedArray(buf);
+            renderFrame(
+              renderContext,
+              data,
+              width,
+              height,
+              ylen,
+              uvlen
+            );
+          },
+          false
+        );
+      });
+    </script>
+  </body>
+</html>
