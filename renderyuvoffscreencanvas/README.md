@@ -1,0 +1,2 @@
+# 使用OffscreenCanvas渲染yuv
+使用offscreenCanvas渲染yuv。从主线程启动渲染，在worker线程中执行渲染。
