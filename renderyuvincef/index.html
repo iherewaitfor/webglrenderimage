@@ -15,9 +15,7 @@
     <script>
       function Texture(gl) {
         this.gl = gl;
-        // this.texture = gl.createTexture(gl.ALPHA, video_width, video_height*3/2);
-         this.texture = gl.createTexture(gl.ALPHA, 640, 540);
-        // this.texture = gl.createTexture();
+        this.texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
