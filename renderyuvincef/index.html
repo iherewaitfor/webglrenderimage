@@ -10,12 +10,14 @@
   <body>
     <img id="img" src="./cat-color.jpg" alt="" />
     <input type="file" />
-    <button onclick="renderFrame(window.gl, null,640, 480);">play</button>
+    <button onclick="renderFrame(window.gl, null,640, 360);">play</button>
     <canvas id="canvas"></canvas>
     <script>
       function Texture(gl) {
         this.gl = gl;
-        this.texture = gl.createTexture();
+        // this.texture = gl.createTexture(gl.ALPHA, video_width, video_height*3/2);
+         this.texture = gl.createTexture(gl.ALPHA, 640, 540);
+        // this.texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -38,11 +40,11 @@
         gl.texImage2D(
           gl.TEXTURE_2D,
           0,
-          gl.LUMINANCE,
+          gl.ALPHA,
           width,
           height,
           0,
-          gl.LUMINANCE,
+          gl.ALPHA,
           gl.UNSIGNED_BYTE,
           data
         );
@@ -100,7 +102,7 @@
           "vTextureCoord.y = 1.0/6.0 + uTextureCoord.y;",
           
 
-          " gl_FragColor = vec4( texture2D(YTexture, yTextureCoord).x, texture2D(YTexture, uTextureCoord).x, texture2D(YTexture, vTextureCoord).x, 1) * YUV2RGB;",
+          " gl_FragColor = vec4( texture2D(YTexture, yTextureCoord).a, texture2D(YTexture, uTextureCoord).a, texture2D(YTexture, vTextureCoord).a, 1) * YUV2RGB;",
           "}",
         ].join("\n");
 
@@ -155,13 +157,24 @@
         gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         gl.y = new Texture(gl);
-        gl.y.fill(640, 480, null);
+        gl.y.fill(640, 540, null);
         gl.y.bind(0, program, "YTexture");
 
         return gl;
       }
 
       function renderFrame(gl, videoFrame, width, height) {
+
+        if(!gl){ //若没有初始化，则初始化。
+          var canvas = document.getElementById("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            var renderContext = setupCanvas(canvas, {
+              preserveDrawingBuffer: false,
+            });
+            gl = renderContext;
+        }
+
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
@@ -170,12 +183,12 @@
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoWidth"), width); //设置视频宽度到shader
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoHeight"), height);//设置视频高度到shader
         //使用单纹理
-        if(videoFrame){
-          gl.y.fill(width, height*3/2, videoFrame);
+        // if(videoFrame){
+        //   gl.y.fill(width, height*3/2, videoFrame);
+        // }
+        if(gl.texBindSharedHandle){
+          gl.texBindSharedHandle(0x40001702);
         }
-        // gl.y.fill(width, height*3/2, videoFrame);
-        // gl.y.fill(width, height*3/2, null);
-        gl.texBindSharedHandle(0x40001a82);
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
