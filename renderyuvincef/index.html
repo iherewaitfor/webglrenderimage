@@ -14,16 +14,12 @@
     视频高度<input type="number" id="videoHeight"value="" onchange="{console.log('videoHeight is '+this.value);window.videoHeight=this.value;}"></input>
     
     共享纹理句柄:
-    <input type="number" value="123" onchange="{console.log('txtHandle is '+this.value);window.txtHandle=this.value;}"></input>
-    <button onclick="renderFrame(window.gl, null,window.videoWidth, window.videoHeight);">play</button><br/>
+    <input type="number" value="" onchange="{console.log('txtHandle is '+this.value);window.txtHandle=this.value;}"></input>
+    <button onclick="clickPlay();">AutoPlay</button>
+    <button onclick="clickPlayOnce();">PlayOnce</button><br/>
+    <br/>
     <canvas id="canvas"></canvas>
     <script>
-      window.videoWidth=640;
-      window.videoHeight=360;
-      document.getElementById("videoWidth").value = window.videoWidth;
-      document.getElementById("videoHeight").value = window.videoHeight;
-
-
       function Texture(gl) {
         this.gl = gl;
         this.texture = gl.createTexture();
@@ -58,6 +54,25 @@
           data
         );
       };
+      
+      window.videoWidth=640;
+      window.videoHeight=360;
+      document.getElementById("videoWidth").value = window.videoWidth;
+      document.getElementById("videoHeight").value = window.videoHeight;
+     
+      function clickPlay(){
+        if(window.timeId){
+          clearInterval(window.timeId);
+        }
+        window.timeId = setInterval("renderFrame(window.gl, null,window.videoWidth, window.videoHeight)", 100);
+      }
+      function clickPlayOnce(){
+        if(window.timeId){
+          clearInterval(window.timeId);
+        }
+        renderFrame(window.gl, null,window.videoWidth, window.videoHeight);
+      }
+
       function setupCanvas(canvas) {
         var gl =
           canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -166,7 +181,7 @@
         gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         gl.y = new Texture(gl);
-        gl.y.fill(640, 540, null);
+        gl.y.fill(window.videoWidth, window.videoHeight * 3/2, null); //YUV的纹理高度视频高度的3/2
         gl.y.bind(0, program, "YTexture");
 
         return gl;
