@@ -4,15 +4,26 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>render yuv texture in cef</title>
     <style></style>
   </head>
   <body>
     <img id="img" src="./cat-color.jpg" alt="" />
-    <input type="file" />
-    <button onclick="renderFrame(window.gl, null,640, 360);">play</button>
+    <input type="file" /><br/>
+    视频宽度<input type="number" id="videoWidth" value="" onchange="{console.log('videoWidth is '+this.value);window.videoWidth=this.value;}"></input>
+    视频高度<input type="number" id="videoHeight"value="" onchange="{console.log('videoHeight is '+this.value);window.videoHeight=this.value;}"></input>
+    
+    共享纹理句柄:
+    <input type="number" value="123" onchange="{console.log('txtHandle is '+this.value);window.txtHandle=this.value;}"></input>
+    <button onclick="renderFrame(window.gl, null,window.videoWidth, window.videoHeight);">play</button><br/>
     <canvas id="canvas"></canvas>
     <script>
+      window.videoWidth=640;
+      window.videoHeight=360;
+      document.getElementById("videoWidth").value = window.videoWidth;
+      document.getElementById("videoHeight").value = window.videoHeight;
+
+
       function Texture(gl) {
         this.gl = gl;
         this.texture = gl.createTexture();
@@ -180,12 +191,14 @@
 
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoWidth"), width); //设置视频宽度到shader
         gl.uniform1f(gl.getUniformLocation(gl.program, "videoHeight"), height);//设置视频高度到shader
-        //使用单纹理
-        // if(videoFrame){
-        //   gl.y.fill(width, height*3/2, videoFrame);
-        // }
+        if(videoFrame){
+          //直接渲染页面上传的纹理，方便测试代码。
+          gl.y.fill(width, height*3/2, videoFrame);
+        } 
         if(gl.texBindSharedHandle){
-          gl.texBindSharedHandle(0x40001702);
+          if(window.txtHandle){
+            gl.texBindSharedHandle(window.txtHandle);
+          }
         }
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
