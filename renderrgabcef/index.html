@@ -4,13 +4,20 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>render rgba texture</title>
+    <title>render rgba texture in cef</title>
     <style></style>
   </head>
   <body>
     <img id="img" src="./cat-color.jpg" alt="" />
-    <input type="file" />
-    <button onclick="renderFrame(window.gl, null,640, 360);">play</button>
+    <input type="file" /><br/>
+    视频宽度<input type="number" id="videoWidth" value="" onchange="{console.log('videoWidth is '+this.value);window.videoWidth=this.value;}"></input>
+    视频高度<input type="number" id="videoHeight"value="" onchange="{console.log('videoHeight is '+this.value);window.videoHeight=this.value;}"></input>
+    
+    共享纹理句柄:
+    <input type="number" value="" onchange="{console.log('txtHandle is '+this.value);window.txtHandle=this.value;}"></input>
+    <button onclick="clickPlay();">AutoPlay</button>
+    <button onclick="clickPlayOnce();">PlayOnce</button><br/>
+    <br/>
     <canvas id="canvas"></canvas>
     <script>
       function Texture(gl) {
@@ -47,6 +54,25 @@
           data
         );
       };
+      
+      window.videoWidth=640;
+      window.videoHeight=360;
+      document.getElementById("videoWidth").value = window.videoWidth;
+      document.getElementById("videoHeight").value = window.videoHeight;
+     
+      function clickPlay(){
+        if(window.timeId){
+          clearInterval(window.timeId);
+        }
+        window.timeId = setInterval("renderFrame(window.gl, null,window.videoWidth, window.videoHeight)", 100);
+      }
+      function clickPlayOnce(){
+        if(window.timeId){
+          clearInterval(window.timeId);
+        }
+        renderFrame(window.gl, null,window.videoWidth, window.videoHeight);
+      }
+
       function setupCanvas(canvas) {
         var gl =
           canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -127,7 +153,7 @@
         gl.vertexAttribPointer(textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         gl.y = new Texture(gl);
-        gl.y.fill(640, 360, null);
+        gl.y.fill(window.videoWidth, window.videoHeight, null); //YUV的纹理高度视频高度的3/2
         gl.y.bind(0, program, "YTexture");
 
         return gl;
@@ -149,10 +175,16 @@
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        // if(videoFrame){
-        //   gl.y.fill(width, height, videoFrame);
-        // }
-        gl.texBindSharedHandle(0x40000d82);
+
+        if(videoFrame){
+          //直接渲染页面上传的纹理，方便测试代码。
+          gl.y.fill(width, height, videoFrame);
+        } 
+        if(gl.texBindSharedHandle){
+          if(window.txtHandle){
+            gl.texBindSharedHandle(window.txtHandle);
+          }
+        }
 
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       }
@@ -170,8 +202,8 @@
           "loadend",
           (e) => {
             var buf = e.target.result;
-            const width = 640;
-            const height = 360;
+            const width = window.videoWidth;
+            const height = window.videoHeight;
             var canvas = document.getElementById("canvas");
             canvas.width = width;
             canvas.height = height;
