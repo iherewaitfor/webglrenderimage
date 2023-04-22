@@ -17,6 +17,9 @@
     <input type="number" value="" onchange="{console.log('txtHandle is '+this.value);window.txtHandle=this.value;}"></input>
     <button onclick="clickPlay();">AutoPlay</button>
     <button onclick="clickPlayOnce();">PlayOnce</button><br/>
+    共享内存key<input type="text" id="videoShareMemKey"value="" onchange="{console.log('videoShareMemKey is '+this.value);window.videoShareMemKey=this.value;}"></input>
+    <button onclick="clickPlayMemory();">AutoPlayRGBAShareMemory</button>
+    <button onclick="clickPlayMemoryOnce();">PlayRGBAShareMemory</button>
     <br/>
     <canvas id="canvas"></canvas>
     <script>
@@ -59,18 +62,43 @@
       window.videoHeight=360;
       document.getElementById("videoWidth").value = window.videoWidth;
       document.getElementById("videoHeight").value = window.videoHeight;
+	  window.videoShareMemKey = "myShareMemRGBA123";//
      
       function clickPlay(){
         if(window.timeId){
           clearInterval(window.timeId);
         }
-        window.timeId = setInterval("renderFrame(window.gl, null,window.videoWidth, window.videoHeight)", 100);
+        window.timeId = setInterval("renderFrame(window.gl, null,window.videoWidth, window.videoHeight)", 50);
       }
       function clickPlayOnce(){
         if(window.timeId){
           clearInterval(window.timeId);
         }
         renderFrame(window.gl, null,window.videoWidth, window.videoHeight);
+      }
+      function clickPlayMemory(){
+        if(window.timeId){
+          clearInterval(window.timeId);
+        }
+        window.timeId = setInterval("renderShareMemRGBA();", 50);
+      }
+      function clickPlayMemoryOnce(){
+        if(window.timeId){
+          clearInterval(window.timeId);
+        }
+        renderShareMemRGBA();
+      }
+      function renderShareMemRGBA(){
+        var canvas = document.getElementById("canvas");
+        canvas.width = window.videoWidth;
+        canvas.height = window.videoHeight;
+        var tempContext2D = canvas.getContext('2d');
+        //共享内存传参规则：
+        //key|0|视频宽度|视频高度|每行视频数据大小的字节数
+        //myShareMemRGBA123|0|640|360|2560
+        var key = window.videoShareMemKey;
+        key = key + '|0|' + window.videoWidth+'|' + window.videoHeight + '|' + (window.videoWidth * 4);
+        tempContext2D['putSharedMemImageData'](key);
       }
 
       function setupCanvas(canvas) {
